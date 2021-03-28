@@ -1,5 +1,7 @@
 import Dispatch
+#if canImport(CoreFoundation)
 import CoreFoundation
+#endif
 import Foundation
 import XCTest
 import Nimble
@@ -183,7 +185,11 @@ final class AsyncTest: XCTestCase {
         timer.setEventHandler {
             failed = true
             fail("Timed out: Main RunLoop stalled.")
+            #if canImport(CoreFoundation)
             CFRunLoopStop(CFRunLoopGetMain())
+            #else
+            RunLoop.main._stop()
+            #endif
         }
         timer.resume()
 
