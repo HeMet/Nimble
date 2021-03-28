@@ -38,14 +38,18 @@ internal class NotificationCollector {
     }
 }
 
+#if canImport(CoreFoundation)
 private let mainThread = pthread_self()
+#endif
 
 private func _postNotifications<Out>(
     _ predicate: Predicate<[Notification]>,
     from center: NotificationCenter,
     names: Set<Notification.Name> = []
 ) -> Predicate<Out> {
+    #if canImport(CoreFoundation)
     _ = mainThread // Force lazy-loading of this value
+    #endif
     let collector = NotificationCollector(notificationCenter: center, names: names)
     collector.startObserving()
     var once: Bool = false
@@ -58,8 +62,11 @@ private func _postNotifications<Out>(
             location: actualExpression.location,
             withoutCaching: true
         )
-
+        #if canImport(CoreFoundation)
         assert(pthread_equal(mainThread, pthread_self()) != 0, "Only expecting closure to be evaluated on main thread.")
+        #else        
+        assert(Thread.isMainThread, "Only expecting closure to be evaluated on main thread.")
+        #endif
         if !once {
             once = true
             _ = try actualExpression.evaluate()
@@ -110,7 +117,9 @@ public func postNotifications<T>(
     _ notificationsMatcher: T,
     from center: NotificationCenter = .default
 ) -> Predicate<Any> where T: Matcher, T.ValueType == [Notification] {
+    #if canImport(CoreFoundation)
     _ = mainThread // Force lazy-loading of this value
+    #endif
     let collector = NotificationCollector(notificationCenter: center)
     collector.startObserving()
     var once: Bool = false
@@ -119,8 +128,11 @@ public func postNotifications<T>(
         let collectorNotificationsExpression = Expression(memoizedExpression: { _ in
             return collector.observedNotifications
             }, location: actualExpression.location, withoutCaching: true)
-
+        #if canImport(CoreFoundation)
         assert(pthread_equal(mainThread, pthread_self()) != 0, "Only expecting closure to be evaluated on main thread.")
+        #else
+        assert(Thread.isMainThread, "Only expecting closure to be evaluated on main thread.")
+        #endif
         if !once {
             once = true
             _ = try actualExpression.evaluate()
