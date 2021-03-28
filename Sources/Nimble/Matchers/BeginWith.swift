@@ -17,7 +17,7 @@ public func beginWith(_ startingElement: Any) -> Predicate<NMBOrderedCollection>
     return Predicate.simple("begin with <\(startingElement)>") { actualExpression in
         guard let collection = try actualExpression.evaluate() else { return .fail }
         guard collection.count > 0 else { return .doesNotMatch }
-        #if os(Linux)
+        #if os(Linux) || os(Windows)
             guard let collectionValue = collection.object(at: 0) as? NSObject else {
                 return .fail
             }
